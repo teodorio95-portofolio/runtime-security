@@ -8,6 +8,8 @@ driver:
   #   * minikube + vfkit (arm64)-> CRASHES (modern_ebpf probe error; kmod won't
   #                                build/load on the ISO kernel)
   #   * Real x86_64 Linux node  -> FULL detection (cloud/VM) — the supported setup
+  #                                (needs Falco >= 0.45.1 on recent kernels, see
+  #                                gitops/falco.yaml)
   # Not a config bug: Falco schema-validates these rules everywhere; they fire on
   # a real node. The chart sets no hostPID, and patching it is blocked by its own
   # privileged:true + allowPrivilegeEscalation:false securityContext.
