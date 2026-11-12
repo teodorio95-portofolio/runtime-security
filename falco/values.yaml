@@ -36,11 +36,26 @@ falco:
 # Our detections for the attacks documented in project #4 (offensive-writeups).
 customRules:
   custom-rules.yaml: |-
+    # Known exec health probes (readiness/liveness) that would otherwise fire
+    # the rule below every few seconds. Each entry is pinned to its namespace
+    # and the probe's exact command, so a shell or curl doing anything else
+    # in the same pod still alerts.
+    #   * ai-gateway postgres  (secure-ai-gateway charts/ai-gateway/templates/postgres.yaml)
+    #   * flow-doctor paperclip (homelab-apps manifests/flow-doctor/deployment.yaml)
+    - macro: known_exec_probe
+      condition: >
+        (k8s.ns.name = ai-gateway
+         and proc.cmdline = "sh -c pg_isready -U \"$POSTGRES_USER\" -d \"$POSTGRES_DB\"")
+        or (k8s.ns.name = flow-doctor
+            and proc.cmdline in ("curl -fsS -m 3 http://127.0.0.1:3100/api/health",
+                                 "curl -fsS -m 5 http://127.0.0.1:3100/api/health"))
+
     - rule: Suspicious tool executed in container
       desc: A shell / recon / exfil tool ran inside a container — likely post-exploitation
       condition: >
         spawned_process and container
         and proc.name in (sh, bash, ash, dash, nc, ncat, netcat, nmap, sqlmap, wget, curl, socat)
+        and not known_exec_probe
       output: >
         Suspicious process in container (proc=%proc.name cmdline=%proc.cmdline
         image=%container.image.repository pod=%k8s.pod.name ns=%k8s.ns.name)
