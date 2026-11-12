@@ -15,6 +15,18 @@ driver:
   # privileged:true + allowPrivilegeEscalation:false securityContext.
   kind: modern_ebpf
 
+# Explicit on purpose: a Kyverno "add default securityContext" mutation (e.g.
+# the one secure-ai-gateway installs) only fills fields that are absent. Left
+# empty, it injects allowPrivilegeEscalation:false next to privileged:true,
+# which the API server rejects, and runAsNonRoot:true, which a root image
+# cannot satisfy. Setting containerSecurityContext also replaces the chart's
+# driver-derived default, so privileged must be repeated here.
+podSecurityContext:
+  runAsNonRoot: false
+containerSecurityContext:
+  privileged: true
+  allowPrivilegeEscalation: true
+
 # Emit alerts as JSON to stdout so `make falco-events` (kubectl logs) shows them.
 tty: true
 falco:
